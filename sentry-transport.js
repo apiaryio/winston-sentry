@@ -43,29 +43,38 @@ var Sentry = winston.transports.CustomerLogger = function (options) {
 util.inherits(Sentry, winston.Transport);
 
 Sentry.prototype.log = function (level, msg, meta, callback) {
-  // TODO: handle this better
-  level = this._levels_map[level] || this.level;
-  meta = meta || {};
-  
-  extra = _.extend(meta, {
-    'level': level,
-    'logger': this.logger
-  });
-  
-  try {
-    if(level == 'error') {
-      // Support exceptions logging
-      this._sentry.captureError(new Error(msg), extra, function(err) {
-        callback(null, true);
-      });
-    } else {
-      this._sentry.captureMessage(msg, extra, function(err) {
-        callback(null, true);
-      });
+    // TODO: handle this better
+    level = this._levels_map[level] || this.level;
+    meta = meta || {};
+
+    extra = _.extend(meta, {
+        'level': level,
+        'logger': this.logger
+    });
+
+    try {
+        if(level == 'error') {
+            // Support exceptions logging
+            if((meta instanceof Error) && (stack = meta.stack)) {
+                if(meta.message) {
+                    msg += " | " + meta.message;
+                }
+                e = new Error(msg)
+                e.stack = meta.stack;
+            } else {
+                e = new Error(msg)
+            }
+            this._sentry.captureError(e, extra, function(err) {
+                callback(null, true);
+            });
+        } else {
+            this._sentry.captureMessage(msg, extra, function(err) {
+                callback(null, true);
+            });
+        }
+    } catch(err) {
+        console.log(err);
     }
-  } catch(err) {
-    console.log(err);
-  }
 };
 
 module.exports = Sentry;
