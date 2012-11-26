@@ -47,28 +47,40 @@ Sentry.prototype.log = function (level, msg, meta, callback) {
     level = this._levels_map[level] || this.level;
     meta = meta || {};
 
-    extra = _.extend(meta, {
-        'level': level,
-        'logger': this.logger
-    });
+    if(meta instanceof Error) {
+        extra = _.extend({},  {
+            'message': meta.message,
+            'level': level,
+            'logger': this._logger
+        });
+    } else {
+        extra = _.extend(meta, {
+            'level': level,
+            'logger': this._logger
+        });
+    }
 
     try {
-        if(level == 'error') {
+        if((meta instanceof Error) && (stack = meta.stack)) {
             // Support exceptions logging
-            if((meta instanceof Error) && (stack = meta.stack)) {
-                if(meta.message) {
-                    msg += " | " + meta.message;
-                }
-                e = new Error(msg)
-                e.stack = meta.stack;
-            } else {
-                e = new Error(msg)
+            if(meta.message) {
+                msg += " | " + meta.message;
             }
+            e = new Error(msg);
+            e.stack = meta.stack;
+            e.name = level
+            this._sentry.captureError(e, extra, function(err) {
+                callback(null, true);
+            });
+        } else if ((msg instanceof Error) && (stack = msg.stack)) {
+            e = new Error(msg.message)
+            e.stack = msg.stack;
+            e.name = level
             this._sentry.captureError(e, extra, function(err) {
                 callback(null, true);
             });
         } else {
-            this._sentry.captureMessage(msg, extra, function(err) {
+            this._sentry.captureMessage(msg.message || msg, extra, function(err) {
                 callback(null, true);
             });
         }
