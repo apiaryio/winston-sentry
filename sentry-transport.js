@@ -47,17 +47,19 @@ Sentry.prototype.log = function (level, msg, meta, callback) {
     level = this._levels_map[level] || this.level;
     meta = meta || {};
 
-    if(meta instanceof Error) {
-        extra = _.extend({},  {
+    if(meta instanceof Error && meta.stack) {
+        console.log('if(meta instanceof Error)');
+        extra = {
             'message': meta.message,
             'level': level,
             'logger': this._logger
-        });
+        }
     } else {
-        extra = _.extend(meta, {
+        extra = {
             'level': level,
-            'logger': this._logger
-        });
+            'logger': this._logger,
+            'extra' : meta
+        }
     }
 
     try {
@@ -88,5 +90,4 @@ Sentry.prototype.log = function (level, msg, meta, callback) {
         console.log(err);
     }
 };
-
 module.exports = Sentry;
