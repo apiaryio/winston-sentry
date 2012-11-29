@@ -48,7 +48,6 @@ Sentry.prototype.log = function (level, msg, meta, callback) {
     meta = meta || {};
 
     if(meta instanceof Error && meta.stack) {
-        console.log('if(meta instanceof Error)');
         extra = {
             'message': meta.message,
             'level': level,
